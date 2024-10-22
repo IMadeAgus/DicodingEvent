@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.dicodingevent.data.response.ListEventsItem
+import com.example.dicodingevent.data.remote.response.ListEventsItem
 import com.example.dicodingevent.databinding.FragmentHomeBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
 import com.google.android.material.snackbar.Snackbar
@@ -16,7 +16,7 @@ import com.google.android.material.snackbar.Snackbar
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
-    private val homeViewModel by viewModels<HomeViewModel>()
+//    private val homeViewModel by viewModels<HomeViewModel>()
     private lateinit var homeUpcomingAdapter: HomeUpcomingAdapter
     private lateinit var homeFinishedAdapter: HomeFinishedAdapter
 
@@ -57,22 +57,22 @@ class HomeFragment : Fragment() {
             setHasFixedSize(true)
             this.adapter = this@HomeFragment.homeFinishedAdapter
         }
-        homeViewModel.upcomingEvent.observe(viewLifecycleOwner) { upcomingEvents ->
-            setUpcomingEventData(upcomingEvents)
-        }
-        homeViewModel.finishedEvent.observe(viewLifecycleOwner) { finshedEvents ->
-            setFinishedEventData(finshedEvents)
-        }
-
-        homeViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
-
-        homeViewModel.snackbarText.observe(viewLifecycleOwner) { event ->
-            event.getContentIfNotHandled()?.let { message ->
-                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-            }
-        }
+//        homeViewModel.upcomingEvent.observe(viewLifecycleOwner) { upcomingEvents ->
+//            setUpcomingEventData(upcomingEvents)
+//        }
+//        homeViewModel.finishedEvent.observe(viewLifecycleOwner) { finshedEvents ->
+//            setFinishedEventData(finshedEvents)
+//        }
+//
+//        homeViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+//            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+//        }
+//
+//        homeViewModel.snackbarText.observe(viewLifecycleOwner) { event ->
+//            event.getContentIfNotHandled()?.let { message ->
+//                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+//            }
+//        }
     }
 
     private fun setFinishedEventData(listEvent: List<ListEventsItem>) {

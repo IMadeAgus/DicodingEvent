@@ -10,6 +10,7 @@
     <string name="upcoming">Upcoming Event</string>
     <string name="finished">Finished Event</string>
     <string name="dicoding_event">Dicoding Event</string>
+    <string name="add_favorite">Tambah Favorite</string>
 
 
 </resources>

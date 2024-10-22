@@ -8,7 +8,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import com.bumptech.glide.Glide
-import com.example.dicodingevent.data.response.Event
+import com.example.dicodingevent.data.remote.response.Event
 import com.example.dicodingevent.databinding.ActivityDetailBinding
 import com.google.android.material.snackbar.Snackbar
 

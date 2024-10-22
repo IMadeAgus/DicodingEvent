@@ -1,7 +1,7 @@
-package com.example.dicodingevent.data.retrofit
+package com.example.dicodingevent.data.remote.retrofit
 
-import com.example.dicodingevent.data.response.EventResponse
-import com.example.dicodingevent.data.response.ResponseDetail
+import com.example.dicodingevent.data.remote.response.EventResponse
+import com.example.dicodingevent.data.remote.response.ResponseDetail
 import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -15,10 +15,10 @@ interface ApiService {
     ): Call<EventResponse>
 
     @GET("events")
-    fun getUpcomingEvent(
+    suspend fun getUpcomingEvent(
         @Query("active") active: Int,
         @Query("limit") limit: Int
-    ): Call<EventResponse>
+    ): EventResponse
 
     @GET("events")
     fun getFinishedEvent(

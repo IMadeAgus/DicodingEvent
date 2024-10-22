@@ -5,25 +5,39 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.dicodingevent.data.response.ListEventsItem
 import com.example.dicodingevent.databinding.FragmentUpcomingBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
-import com.google.android.material.snackbar.Snackbar
-
+import com.example.dicodingevent.data.Result
 
 class UpcomingFragment : Fragment() {
 
     private var _binding: FragmentUpcomingBinding? = null
-    private val upcomingViewModel by viewModels<UpcomingViewModel>()
-    private lateinit var adapter: UpcomingAdapter
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private val viewModel: UpcomingViewModel by viewModels<UpcomingViewModel>{
+        UpcomingViewModelFactory.getInstance(requireActivity())
+    }
     private val binding get() = _binding!!
+
+    private val adapter by lazy {
+        UpcomingAdapter(
+            onItemClick = { event ->
+                val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+                    putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
+                }
+                startActivity(intent)
+            },
+            onFavoriteClick = { event ->
+                if(event.isFavorited) {
+                    viewModel.deleteFavoritedEvent(event)
+                } else {
+                viewModel.toggleFavorite(event)
+                }
+            }
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,61 +45,48 @@ class UpcomingFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-
         _binding = FragmentUpcomingBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupRecyclerView()
+        observeData()
+    }
 
-        val searchBar = binding.searchBar
-        val searchView = binding.searchView
-
-        searchView.setupWithSearchBar(searchBar)
-        searchView.editText.setOnEditorActionListener { textView, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                val query = textView.text.toString()
-                upcomingViewModel.searchEvents(query)
-                searchView.hide()
-                searchBar.setText(query)
-                return@setOnEditorActionListener true
-            }
-            false
-        }
-
-        adapter = UpcomingAdapter { event ->
-            val intent = Intent(requireContext(), DetailActivity::class.java)
-            intent.putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
-            startActivity(intent)
-        }
-
+    private fun setupRecyclerView() {
         binding.rvUpcomingEvent.apply {
-            layoutManager = LinearLayoutManager(requireActivity())
-            setHasFixedSize(true)
-            this.adapter = this@UpcomingFragment.adapter
-        }
-
-        upcomingViewModel.event.observe(viewLifecycleOwner) { events ->
-            setEventData(events)
-        }
-
-
-        upcomingViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
-
-        upcomingViewModel.snackbarText.observe(viewLifecycleOwner) { event ->
-            event.getContentIfNotHandled()?.let { message ->
-                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-            }
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = this@UpcomingFragment.adapter
         }
     }
 
-    private fun setEventData(listEvent: List<ListEventsItem>) {
-        adapter.submitList(listEvent)
-        binding.rvUpcomingEvent.adapter = adapter
+    private fun observeData() {
+        viewModel.upcomingEvents.observe(viewLifecycleOwner, {result ->
+            if (result != null) {
+                when (result) {
+                    is Result.Loading -> {
+                        binding?.progressBar?.visibility = View.VISIBLE
+                    }
 
+                    is Result.Success -> {
+                        binding?.progressBar?.visibility = View.GONE
+                        val newsData = result.data
+                        adapter.submitList(newsData)
+                    }
+
+                    is Result.Error -> {
+                        binding?.progressBar?.visibility = View.GONE
+                        Toast.makeText(
+                            context,
+                            "Terjadi kesalahan" + result.error,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        })
     }
 
     override fun onDestroyView() {

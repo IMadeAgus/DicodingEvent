@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.dicodingevent.data.response.ListEventsItem
+import com.example.dicodingevent.data.remote.response.ListEventsItem
 import com.example.dicodingevent.databinding.FragmentFinishedBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
 import com.google.android.material.snackbar.Snackbar
