@@ -24,6 +24,7 @@
         android:overScrollMode="never"
         android:layout_marginTop="10dp"
         android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="80dp"
         android:scrollbarSize="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

@@ -5,84 +5,129 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.dicodingevent.data.Result
 import com.example.dicodingevent.data.remote.response.ListEventsItem
 import com.example.dicodingevent.databinding.FragmentHomeBinding
+import com.example.dicodingevent.databinding.FragmentUpcomingBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
+import com.example.dicodingevent.ui.finished.FinishedAdapter
+import com.example.dicodingevent.ui.upcoming.UpcomingAdapter
+import com.example.dicodingevent.ui.upcoming.UpcomingViewModel
+import com.example.dicodingevent.ui.upcoming.UpcomingViewModelFactory
 import com.google.android.material.snackbar.Snackbar
 
 class HomeFragment : Fragment() {
-
     private var _binding: FragmentHomeBinding? = null
-//    private val homeViewModel by viewModels<HomeViewModel>()
-    private lateinit var homeUpcomingAdapter: HomeUpcomingAdapter
-    private lateinit var homeFinishedAdapter: HomeFinishedAdapter
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private val viewModel: HomeViewModel by viewModels<HomeViewModel>{
+        HomeViewModelFactory.getInstance(requireActivity())
+    }
     private val binding get() = _binding!!
+
+    private val upcomingadapter by lazy {
+        HomeUpcomingAdapter(
+            onItemClick = { event ->
+                val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+                    putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
+                }
+                startActivity(intent)
+            },
+            onFavoriteClick = { event ->
+                if(event.isFavorited) {
+                    viewModel.deleteFavoritedEvent(event)
+                } else {
+                    viewModel.toggleFavorite(event)
+                }
+            }
+        )
+    }
+
+    private val finishedAdapter by lazy {
+        HomeFinishedAdapter(
+            onItemClick = { event ->
+                val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+                    putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
+                }
+                startActivity(intent)
+            },
+            onFavoriteClick = { event ->
+                if(event.isFavorited) {
+                    viewModel.deleteFavoritedEvent(event)
+                } else {
+                    viewModel.toggleFavorite(event)
+                }
+            }
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-        return root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        homeUpcomingAdapter = HomeUpcomingAdapter { event ->
-            val intent = Intent(requireContext(), DetailActivity::class.java)
-            intent.putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
-            startActivity(intent)
-        }
-        homeFinishedAdapter = HomeFinishedAdapter { event ->
-            val intent = Intent(requireContext(), DetailActivity::class.java)
-            intent.putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
-            startActivity(intent)
-        }
+        setupUpcomingRecyclerView()
+        observeDataUpcoming()
+        setupFinishedRecyclerView()
+        observeDataFinished()
 
+    }
+
+    private fun setupUpcomingRecyclerView() {
         binding.rvHomeUpcomingEvent.apply {
-            layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-            setHasFixedSize(true)
-            this.adapter = this@HomeFragment.homeUpcomingAdapter
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = this@HomeFragment.upcomingadapter
         }
+    }
+    private fun observeDataUpcoming() {
+        viewModel.upcomingEvents.observe(viewLifecycleOwner, {result ->
+            if (result != null) {
+                when (result) {
+                    is Result.Loading -> {
+                        binding?.progressBar?.visibility = View.VISIBLE
+                    }
+
+                    is Result.Success -> {
+                        binding?.progressBar?.visibility = View.GONE
+                        val newsData = result.data
+                        upcomingadapter.submitList(newsData)
+                    }
+
+                    is Result.Error -> {
+                        binding?.progressBar?.visibility = View.GONE
+                        Toast.makeText(
+                            context,
+                            "Terjadi kesalahan" + result.error,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        })
+    }
+
+    private fun setupFinishedRecyclerView() {
         binding.rvHomeFinishedEvent.apply {
-            layoutManager = LinearLayoutManager(requireActivity())
-            setHasFixedSize(true)
-            this.adapter = this@HomeFragment.homeFinishedAdapter
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = this@HomeFragment.finishedAdapter
+            binding.progressBar.visibility = View.GONE
         }
-//        homeViewModel.upcomingEvent.observe(viewLifecycleOwner) { upcomingEvents ->
-//            setUpcomingEventData(upcomingEvents)
-//        }
-//        homeViewModel.finishedEvent.observe(viewLifecycleOwner) { finshedEvents ->
-//            setFinishedEventData(finshedEvents)
-//        }
-//
-//        homeViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-//            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-//        }
-//
-//        homeViewModel.snackbarText.observe(viewLifecycleOwner) { event ->
-//            event.getContentIfNotHandled()?.let { message ->
-//                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-//            }
-//        }
     }
 
-    private fun setFinishedEventData(listEvent: List<ListEventsItem>) {
-        homeFinishedAdapter.submitList(listEvent)
-        binding.rvHomeFinishedEvent.adapter = homeFinishedAdapter
-    }
+    private fun observeDataFinished() {
+        viewModel.finishedEvent.observe(viewLifecycleOwner) { result ->
+            finishedAdapter.submitList(result?.toList())
 
-    private fun setUpcomingEventData(listEvent: List<ListEventsItem>) {
-        homeUpcomingAdapter.submitList(listEvent)
-        binding.rvHomeUpcomingEvent.adapter = homeUpcomingAdapter
+        }
     }
 
     override fun onDestroyView() {

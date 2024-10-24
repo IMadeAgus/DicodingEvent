@@ -3,6 +3,8 @@
     <string name="title_home">Home</string>
     <string name="title_upcoming">Upcoming </string>
     <string name="title_finished">Finished</string>
+    <string name="title_favorite">Favorite</string>
+    <string name="title_setting">Setting</string>
     <string name="title_event">Judul Event</string>
     <string name="image_banner">Gambar Banner</string>
     <string name="register">Register</string>
@@ -11,6 +13,10 @@
     <string name="finished">Finished Event</string>
     <string name="dicoding_event">Dicoding Event</string>
     <string name="add_favorite">Tambah Favorite</string>
+
+    <string name="dark_mode">Dark Mode</string>
+    <string name="event_notifications">Event Reminder</string>
+
 
 
 </resources>

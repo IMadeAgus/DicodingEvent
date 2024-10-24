@@ -37,6 +37,9 @@ class EventsEntity (
     @field:ColumnInfo(name = "endTime")
     val endTime: String,
 
+    @ColumnInfo(name = "status", typeAffinity = ColumnInfo.TEXT)
+    val status: String,
+
     @field:ColumnInfo(name = "favorited")
      var isFavorited: Boolean
 )

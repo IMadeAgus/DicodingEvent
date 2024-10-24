@@ -19,6 +19,17 @@ import retrofit2.Response
 class UpcomingViewModel(private val eventsRepository: EventsRepository) : ViewModel() {
     val upcomingEvents = eventsRepository.getUpcomingEvents()
 
+    private val _searchResults = MutableLiveData<com.example.dicodingevent.data.Result<List<EventsEntity>>>()
+    val searchResults: LiveData<com.example.dicodingevent.data.Result<List<EventsEntity>>> get() = _searchResults
+
+    fun searchEvents(query: String) {
+        viewModelScope.launch {
+            eventsRepository.searchEvents(query).observeForever {
+                _searchResults.value = it
+            }
+        }
+    }
+
     fun toggleFavorite(event: EventsEntity) {
         viewModelScope.launch {
             eventsRepository.setEventsFavorite(event, true)
@@ -28,12 +39,6 @@ class UpcomingViewModel(private val eventsRepository: EventsRepository) : ViewMo
     fun deleteFavoritedEvent(event: EventsEntity) {
         viewModelScope.launch {
             eventsRepository.setEventsFavorite(event,false)
-        }
-    }
-
-    fun searchEvents(query: String) {
-        viewModelScope.launch {
-            // Search implementation
         }
     }
 

@@ -22,7 +22,16 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:srcCompat="@tools:sample/avatars" />
-
+        <ImageView
+            android:id="@+id/iv_favorite"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginTop="4dp"
+            android:contentDescription="@string/add_favorite"
+            android:src="@drawable/baseline_favorite_border_24"
+            android:tag="Not Saved"
+            app:layout_constraintEnd_toEndOf="@+id/imgMediaCover"
+            app:layout_constraintTop_toTopOf="@+id/imgMediaCover" />
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"

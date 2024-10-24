@@ -68,13 +68,15 @@ dependencies {
     implementation (libs.material.v1100)
 
     // Room
-    // Room
     implementation ("androidx.room:room-runtime:2.5.2")
     ksp ("androidx.room:room-compiler:2.5.2")
     implementation ("androidx.room:room-ktx:2.5.2")
 
-
+    implementation(libs.androidx.datastore.preferences)
 // Coroutine, ViewModel, LiveData
     implementation(libs.kotlinx.coroutines.android)
+
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.android.async.http)
 
 }

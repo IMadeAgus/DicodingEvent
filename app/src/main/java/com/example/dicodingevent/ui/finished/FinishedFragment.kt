@@ -5,23 +5,46 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.dicodingevent.data.Result
 import com.example.dicodingevent.data.remote.response.ListEventsItem
 import com.example.dicodingevent.databinding.FragmentFinishedBinding
+import com.example.dicodingevent.databinding.FragmentUpcomingBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
+import com.example.dicodingevent.ui.upcoming.UpcomingAdapter
+import com.example.dicodingevent.ui.upcoming.UpcomingViewModel
+import com.example.dicodingevent.ui.upcoming.UpcomingViewModelFactory
 import com.google.android.material.snackbar.Snackbar
 
 
 class FinishedFragment : Fragment() {
 
     private var _binding: FragmentFinishedBinding? = null
-    private val finishedViewModel by viewModels<FinishedViewModel>()
-    private lateinit var adapter: FinishedAdapter
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private val viewModel: FinishedViewModel by viewModels<FinishedViewModel>{
+        FinishedViewModelFactory.getInstance(requireActivity())
+    }
     private val binding get() = _binding!!
+
+    private val adapter by lazy {
+        FinishedAdapter(
+            onItemClick = { event ->
+                val intent = Intent(requireContext(), DetailActivity::class.java).apply {
+                    putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
+                }
+                startActivity(intent)
+            },
+            onFavoriteClick = { event ->
+                if(event.isFavorited) {
+                    viewModel.deleteFavoritedEvent(event)
+                } else {
+                    viewModel.toggleFavorite(event)
+                }
+            }
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,45 +53,49 @@ class FinishedFragment : Fragment() {
     ): View {
 
         _binding = FragmentFinishedBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-        return root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupRecyclerView()
+        observeData()
+    }
 
-
-        adapter = FinishedAdapter { event ->
-            val intent = Intent(requireContext(), DetailActivity::class.java)
-            intent.putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
-            startActivity(intent)
-        }
-
+    private fun setupRecyclerView() {
         binding.rvFinishedEvent.apply {
-            layoutManager = LinearLayoutManager(requireActivity())
-            setHasFixedSize(true)
-            this.adapter = this@FinishedFragment.adapter
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = this@FinishedFragment.adapter
         }
-        finishedViewModel.event.observe(viewLifecycleOwner) { events ->
-            setEventData(events)
-        }
+    }
 
+    private fun observeData() {
+        viewModel.finishedEvent.observe(viewLifecycleOwner, {result ->
+            if (result != null) {
+                when (result) {
+                    is Result.Loading -> {
+                        binding?.progressBar?.visibility = View.VISIBLE
+                    }
 
-        finishedViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
+                    is Result.Success -> {
+                        binding?.progressBar?.visibility = View.GONE
+                        val newsData = result.data
+                        adapter.submitList(newsData)
+                    }
 
-        finishedViewModel.snackbarText.observe(viewLifecycleOwner) { event ->
-            event.getContentIfNotHandled()?.let { message ->
-                Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+                    is Result.Error -> {
+                        binding?.progressBar?.visibility = View.GONE
+                        Toast.makeText(
+                            context,
+                            "Terjadi kesalahan" + result.error,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             }
-        }
+        })
     }
-    private fun setEventData(listEvent: List<ListEventsItem>) {
-        adapter.submitList(listEvent)
-        binding.rvFinishedEvent.adapter = adapter
 
-    }
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
