@@ -7,8 +7,6 @@ import androidx.lifecycle.map
 import com.example.dicodingevent.data.local.entity.EventsEntity
 import com.example.dicodingevent.data.local.room.EventsDao
 import com.example.dicodingevent.data.remote.retrofit.ApiService
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 
 class EventsRepository private constructor(
     private val apiService: ApiService,
@@ -74,7 +72,7 @@ class EventsRepository private constructor(
             eventsDao.deleteFinishedAll()
             eventsDao.insertEvents(eventList)
         } catch (e:Exception) {
-            Log.d("EventRepository", "getUpcomingEvents: ${e.message.toString()}")
+            Log.d("EventRepository", "getFinishedEvent: ${e.message.toString()}")
             emit(Result.Error(e.message.toString()))
         }
         val localData: LiveData<Result<List<EventsEntity>>> = eventsDao.getFinishedEvents().map { Result.Success(it) }
@@ -85,8 +83,37 @@ class EventsRepository private constructor(
         return eventsDao.getFavoritedEvents()
     }
 
-    fun get5FinishedEvents(): LiveData<List<EventsEntity>> {
-        return eventsDao.get5FinishedEvents()
+    fun get5FinishedEvents(): LiveData<Result<List<EventsEntity>>> = liveData {
+        emit(Result.Loading)
+        try {
+            val response = apiService.getFinishedEvent(0, 5)
+            val listEvents = response.listEvents
+            val eventList = listEvents.map { listEvent ->
+                val isFavorited = eventsDao.isEventsFavorited(listEvent.id)
+                val status = "finished"
+                EventsEntity(
+                    listEvent.id,
+                    listEvent.name,
+                    listEvent.ownerName,
+                    listEvent.description,
+                    listEvent.mediaCover,
+                    listEvent.link,
+                    listEvent.registrants,
+                    listEvent.quota,
+                    listEvent.beginTime,
+                    listEvent.endTime,
+                    status,
+                    isFavorited
+                )
+            }
+            eventsDao.deleteFinishedAll()
+            eventsDao.insertEvents(eventList)
+        } catch (e:Exception) {
+            Log.d("EventRepository", "getFinishedEvent: ${e.message.toString()}")
+            emit(Result.Error(e.message.toString()))
+        }
+        val localData: LiveData<Result<List<EventsEntity>>> = eventsDao.get5FinishedEvents().map { Result.Success(it) }
+        emitSource(localData)
     }
 
     fun searchEvents(query: String): LiveData<Result<List<EventsEntity>>> = liveData {
@@ -102,13 +129,23 @@ class EventsRepository private constructor(
     fun getTopUpcomingEvent(): LiveData<Result<List<EventsEntity>>> = liveData {
         emit(Result.Loading)
         try {
-            val localData: LiveData<Result<List<EventsEntity>>> = eventsDao.getTopUpcomingEvents().map { Result.Success(it) }
+            val localData: LiveData<Result<List<EventsEntity>>> =
+                eventsDao.getTopUpcomingEvents().map { Result.Success(it) }
             emitSource(localData)
         } catch (e: Exception) {
             emit(Result.Error(e.message.toString()))
         }
     }
 
+    fun getDetailEvent(id: Int): LiveData<Result<EventsEntity>> = liveData {
+        emit(Result.Loading)
+        try {
+            val localData: LiveData<Result<EventsEntity>> = eventsDao.getDetailEvent(id).map { Result.Success(it) }
+            emitSource(localData)
+        } catch (e: Exception) {
+            emit(Result.Error(e.message.toString()))
+        }
+    }
 
     suspend fun setEventsFavorite(events: EventsEntity, favotiteState: Boolean) {
         events.isFavorited = favotiteState

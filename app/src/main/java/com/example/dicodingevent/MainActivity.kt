@@ -1,5 +1,6 @@
 package com.example.dicodingevent
 
+import EventWorker
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
@@ -21,31 +22,38 @@ import com.example.dicodingevent.ui.setting.SettingPreferences
 import com.example.dicodingevent.ui.setting.SettingViewModel
 import com.example.dicodingevent.ui.setting.ViewModelFactory
 import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var settingViewModel: SettingViewModel
+    private lateinit var workManager: WorkManager
 
-//     val requestPermissionLauncher =
-//        registerForActivityResult(
-//            ActivityResultContracts.RequestPermission()
-//        ) { isGranted: Boolean ->
-//            if (isGranted) {
-//                Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show()
-//            } else {
-//                Toast.makeText(this, "Notifications permission rejected", Toast.LENGTH_SHORT).show()
-//            }
-//        }
+    // Launcher untuk meminta izin kepada user untuk menampilkan notifikasi
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show()
+                startWorker() // Mulai worker untuk notifikasi jika izin diberikan
+            } else {
+                Toast.makeText(this, "Notifications permission rejected", Toast.LENGTH_SHORT).show()
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         val pref = SettingPreferences.getInstance(dataStore)
         val factory = ViewModelFactory(pref)
         settingViewModel = ViewModelProvider(this, factory)[SettingViewModel::class.java]
-//        createNotificationChannel()
+        workManager = WorkManager.getInstance(applicationContext)
 
         settingViewModel.getThemeSettings().observe(this) { isDarkModeActive: Boolean ->
             if (isDarkModeActive) {
@@ -55,17 +63,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        super.onCreate(savedInstanceState)
-
-//        if (Build.VERSION.SDK_INT >= 33) {
-//            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-//        }
+        settingViewModel.getNotificationSettings().observe(this) { isNotificationActive: Boolean ->
+            if (isNotificationActive) {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    // Jika versi Android 33 atau lebih tinggi, minta izin notifikasi
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    // Jika Android di bawah 33, langsung aktifkan worker
+                    startWorker()
+                }
+            } else {
+                cancelWorker()
+            }
+        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         val navView: BottomNavigationView = binding.navView
-
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
             setOf(
@@ -77,20 +92,26 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
     }
 
-//    private fun createNotificationChannel() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            val channel = NotificationChannel(
-//                "event_channel",
-//                "Event Notifications",
-//                NotificationManager.IMPORTANCE_HIGH
-//            ).apply {
-//                description = "Channel for event notifications"
-//            }
-//
-//            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//            notificationManager.createNotificationChannel(channel)
-//        }
-//    }
+    private fun startWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
 
+        val periodicWorkRequest = PeriodicWorkRequestBuilder<EventWorker>(
+            1, TimeUnit.DAYS
+        )
+            .setConstraints(constraints)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "eventReminder",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicWorkRequest
+        )
+    }
+
+    private fun cancelWorker() {
+        workManager.cancelUniqueWork("eventReminder")
+    }
     fun getDataStore(): DataStore<Preferences> = dataStore
 }

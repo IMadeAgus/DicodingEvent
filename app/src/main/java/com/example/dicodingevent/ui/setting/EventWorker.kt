@@ -1,66 +1,95 @@
-package com.example.dicodingevent.ui.setting
-
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.os.Build
-import android.os.Looper
-import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.dicodingevent.MainActivity
 import com.example.dicodingevent.R
 import com.example.dicodingevent.data.EventsRepository
-import com.example.dicodingevent.data.local.entity.EventsEntity
-import com.loopj.android.http.AsyncHttpResponseHandler
-import com.loopj.android.http.SyncHttpClient
-import cz.msebera.android.httpclient.Header
-import java.text.DecimalFormat
+import com.example.dicodingevent.data.remote.response.TopUpcomingEventResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.io.IOException
 
-//class EventWorker(
-//    context: Context,
-//    workerParams: WorkerParameters,
-//) : CoroutineWorker(context, workerParams) {
-//    companion object {
-//        // TAG digunakan untuk menandai log
-//        private val TAG = EventWorker::class.java.simpleName
-//
-//        const val NOTIFICATION_ID = 1
-//        const val CHANNEL_ID = "channel_01"
-//        const val CHANNEL_NAME = "event channel"
-//    }
-//
-//    private var resultStatus: Result? = null
-//
-//    override suspend fun doWork(): Result {
-//       return getEventNotifications()
-//    }
-//
-//    private fun getEventNotifications() {
-////        return resultStatus as Result
-//    }
-//
-//    private fun showNotification(title: String, description: String?) {
-//        // Mendapatkan NotificationManager dari sistem
-//        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//        // Membangun notifikasi dengan judul dan pesan yang diberikan
-//        val notification: NotificationCompat.Builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-//            .setSmallIcon(R.drawable.ic_notification)
-//            .setContentTitle(title)
-//            .setContentText(description)
-//            .setPriority(NotificationCompat.PRIORITY_HIGH)
-//            .setDefaults(NotificationCompat.DEFAULT_ALL)
-//
-//        // Jika versi Android adalah Oreo atau lebih baru, buat NotificationChannel
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH)
-//            notification.setChannelId(CHANNEL_ID)
-//            notificationManager.createNotificationChannel(channel)
-//        }
-//        // Menampilkan notifikasi dengan ID tertentu
-//        notificationManager.notify(NOTIFICATION_ID, notification.build())
-//    }
-//}
+class EventWorker(
+    context: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(context, params) {
+
+    companion object {
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "event_reminder_channel"
+        private const val CHANNEL_NAME = "Event Reminder"
+        private const val API_URL = "https://event-api.dicoding.dev/events?active=-1&limit=1"
+    }
+
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder()
+                .url(API_URL)
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful){
+                    showErrorToast("Error: Unexpected response ${response.code}")
+                    throw IOException("Unexpected response ${response.code}")
+                }
+
+                val responseBody = response.body?.string() ?: throw IOException("Empty response body")
+                val moshi = Moshi.Builder()
+                    .addLast(KotlinJsonAdapterFactory())
+                    .build()
+                val jsonAdapter = moshi.adapter(TopUpcomingEventResponse::class.java)
+                val eventResponse = jsonAdapter.fromJson(responseBody)
+
+                eventResponse?.let { response ->
+                    response.listEvents.firstOrNull()?.let { event ->
+                        showNotification(
+                            title = "Upcoming Event!",
+                            description = "Don't miss ${event.name} on ${event.beginTime}"
+                        )
+                        Result.success()
+                    } ?: Result.failure()
+                } ?: Result.failure()
+            }
+        } catch (e: Exception) {
+            showErrorToast("Error: ${e.message}")
+            Result.failure()
+        }
+    }
+
+    private suspend fun showErrorToast(message: String) = withContext(Dispatchers.Main) {
+        Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
+    }
+    private suspend fun showNotification(title: String, description: String) = withContext(Dispatchers.Main) {
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                enableVibration(true)
+                enableLights(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(description)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+}
+

@@ -10,7 +10,6 @@ import com.bumptech.glide.Glide
 import com.example.dicodingevent.R
 import com.example.dicodingevent.data.local.entity.EventsEntity
 import com.example.dicodingevent.databinding.ItemEventBinding
-import com.example.dicodingevent.ui.finished.FinishedAdapter
 
 class FavoriteAdapter (
     private val onFavoriteClick: (EventsEntity) -> Unit,

@@ -3,8 +3,7 @@ package com.example.dicodingevent.ui.upcoming
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,6 +32,7 @@ class UpcomingFragment : Fragment() {
                 val intent = Intent(requireContext(), DetailActivity::class.java).apply {
                     putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
                 }
+                Log.d("DetailActivity", "eventId: $event.id")
                 startActivity(intent)
             },
             onFavoriteClick = { event ->

@@ -10,15 +10,8 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dicodingevent.data.Result
-import com.example.dicodingevent.data.remote.response.ListEventsItem
 import com.example.dicodingevent.databinding.FragmentHomeBinding
-import com.example.dicodingevent.databinding.FragmentUpcomingBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
-import com.example.dicodingevent.ui.finished.FinishedAdapter
-import com.example.dicodingevent.ui.upcoming.UpcomingAdapter
-import com.example.dicodingevent.ui.upcoming.UpcomingViewModel
-import com.example.dicodingevent.ui.upcoming.UpcomingViewModelFactory
-import com.google.android.material.snackbar.Snackbar
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -89,21 +82,21 @@ class HomeFragment : Fragment() {
         }
     }
     private fun observeDataUpcoming() {
-        viewModel.upcomingEvents.observe(viewLifecycleOwner, {result ->
+        viewModel.upcomingEvents.observe(viewLifecycleOwner) { result ->
             if (result != null) {
                 when (result) {
                     is Result.Loading -> {
-                        binding?.progressBar?.visibility = View.VISIBLE
+                        binding.progressBarUpcoming.visibility = View.VISIBLE
                     }
 
                     is Result.Success -> {
-                        binding?.progressBar?.visibility = View.GONE
+                        binding.progressBarUpcoming.visibility = View.GONE
                         val newsData = result.data
                         upcomingadapter.submitList(newsData)
                     }
 
                     is Result.Error -> {
-                        binding?.progressBar?.visibility = View.GONE
+                        binding.progressBarUpcoming.visibility = View.GONE
                         Toast.makeText(
                             context,
                             "Terjadi kesalahan" + result.error,
@@ -112,21 +105,41 @@ class HomeFragment : Fragment() {
                     }
                 }
             }
-        })
+        }
     }
 
     private fun setupFinishedRecyclerView() {
         binding.rvHomeFinishedEvent.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@HomeFragment.finishedAdapter
-            binding.progressBar.visibility = View.GONE
+            binding.progressBarFinished.visibility = View.GONE
         }
     }
 
     private fun observeDataFinished() {
         viewModel.finishedEvent.observe(viewLifecycleOwner) { result ->
-            finishedAdapter.submitList(result?.toList())
+            if (result != null) {
+                when (result) {
+                    is Result.Loading -> {
+                        binding.progressBarFinished.visibility = View.VISIBLE
+                    }
 
+                    is Result.Success -> {
+                        binding.progressBarFinished.visibility = View.GONE
+                        val newsData = result.data
+                        finishedAdapter.submitList(newsData)
+                    }
+
+                    is Result.Error -> {
+                        binding.progressBarFinished.visibility = View.GONE
+                        Toast.makeText(
+                            context,
+                            "Terjadi kesalahan" + result.error,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
         }
     }
 

@@ -15,14 +15,17 @@ interface EventsDao {
     @Query("SELECT * FROM events where status = 'upcoming'")
     fun getUpcomingEvents(): LiveData<List<EventsEntity>>
 
-    @Query("SELECT * FROM events where status = 'finished'")
+    @Query("SELECT * FROM events where status = 'finished' ORDER BY beginTime DESC")
     fun getFinishedEvents(): LiveData<List<EventsEntity>>
 
-    @Query("SELECT * FROM events WHERE status = 'finished' LIMIT 5")
+    @Query("SELECT * FROM events WHERE status = 'finished' ORDER BY beginTime DESC LIMIT 5")
     fun get5FinishedEvents(): LiveData<List<EventsEntity>>
 
     @Query("SELECT * FROM events WHERE status = 'upcoming' LIMIT 1")
     fun getTopUpcomingEvents(): LiveData<List<EventsEntity>>
+
+    @Query("SELECT * FROM events WHERE id = :id ")
+    fun getDetailEvent(id: Int): LiveData<EventsEntity>
 
     @Query("SELECT * FROM events where favorited = 1")
     fun getFavoritedEvents(): LiveData<List<EventsEntity>>

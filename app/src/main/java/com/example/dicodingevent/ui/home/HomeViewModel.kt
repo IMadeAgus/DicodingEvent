@@ -19,14 +19,8 @@ import retrofit2.Response
 
 class HomeViewModel(private val eventsRepository: EventsRepository) : ViewModel() {
     val upcomingEvents = eventsRepository.getUpcomingEvents()
-    private val _finishedEvent = MediatorLiveData<List<EventsEntity>>()
-    val finishedEvent: LiveData<List<EventsEntity>> = _finishedEvent
+    val finishedEvent = eventsRepository.get5FinishedEvents()
 
-    init {
-        _finishedEvent.addSource(eventsRepository.get5FinishedEvents()) { events ->
-            _finishedEvent.value = events
-        }
-    }
     fun toggleFavorite(event: EventsEntity) {
         viewModelScope.launch {
             eventsRepository.setEventsFavorite(event, true)

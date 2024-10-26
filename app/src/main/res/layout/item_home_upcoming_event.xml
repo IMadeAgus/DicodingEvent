@@ -27,6 +27,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp"
             android:contentDescription="@string/add_favorite"
             android:src="@drawable/baseline_favorite_border_24"
             android:tag="Not Saved"

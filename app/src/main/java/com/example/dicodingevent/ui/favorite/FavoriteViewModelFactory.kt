@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.dicodingevent.data.EventsRepository
 import com.example.dicodingevent.di.Injection
-import com.example.dicodingevent.ui.upcoming.UpcomingViewModel
 
 class FavoriteViewModelFactory private constructor(
     private val eventsRepository: EventsRepository

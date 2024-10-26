@@ -78,5 +78,6 @@ dependencies {
 
     implementation(libs.androidx.work.runtime)
     implementation(libs.android.async.http)
+    implementation (libs.moshi.kotlin)
 
 }
