@@ -1,1 +1,1 @@
-﻿# DicodingEvent App
+﻿# DicodingEvent
