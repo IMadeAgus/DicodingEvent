@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.dicodingevent.data.local.entity.EventsEntity
+import com.example.dicodingevent.data.local.entity.EventEntity
 
-@Database(entities = [EventsEntity::class], version = 1, exportSchema = false)
+@Database(entities = [EventEntity::class], version = 1, exportSchema = false)
 abstract class EventsDatabase : RoomDatabase() {
     abstract fun eventsDao(): EventsDao
 

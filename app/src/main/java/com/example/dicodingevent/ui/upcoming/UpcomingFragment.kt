@@ -15,7 +15,6 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dicodingevent.databinding.FragmentUpcomingBinding
 import com.example.dicodingevent.ui.detail.DetailActivity
-import com.example.dicodingevent.data.Result
 import com.example.dicodingevent.data.local.entity.EventsEntity
 
 class UpcomingFragment : Fragment() {

@@ -12,7 +12,6 @@ import com.bumptech.glide.Glide
 import com.example.dicodingevent.R
 import com.example.dicodingevent.data.local.entity.EventsEntity
 import com.example.dicodingevent.databinding.ActivityDetailBinding
-import com.example.dicodingevent.data.Result
 
 class DetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailBinding

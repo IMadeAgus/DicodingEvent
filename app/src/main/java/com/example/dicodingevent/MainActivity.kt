@@ -22,64 +22,65 @@ import com.example.dicodingevent.ui.setting.SettingPreferences
 import com.example.dicodingevent.ui.setting.SettingViewModel
 import com.example.dicodingevent.ui.setting.ViewModelFactory
 import android.Manifest
+import android.content.IntentFilter
+import android.net.ConnectivityManager
+import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.dicodingevent.ui.dialogs.NetworkDialog
+import com.example.eventapp.utils.NetworkUtil
+import com.example.eventapp.utils.NetworkUtil.isNetworkAvailable
 import java.util.concurrent.TimeUnit
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private lateinit var settingViewModel: SettingViewModel
+    private val viewModel by viewModels<SettingViewModel>{
+        ViewModelFactory.getInstance(this)
+    }
+    private lateinit var networkChangeReceiver: NetworkUtil.NetworkChangeReceiver
+    private var networkDialog: NetworkDialog? = null
+    private var dataRefreshListener: NetworkChangeListener? = null
+
     private lateinit var workManager: WorkManager
 
     // Launcher untuk meminta izin kepada user untuk menampilkan notifikasi
-    private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show()
-                startWorker() // Mulai worker untuk notifikasi jika izin diberikan
-            } else {
-                Toast.makeText(this, "Notifications permission rejected", Toast.LENGTH_SHORT).show()
-            }
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Notifications permission rejected", Toast.LENGTH_SHORT).show()
         }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        installSplashScreen()
 
-        val pref = SettingPreferences.getInstance(dataStore)
-        val factory = ViewModelFactory(pref)
-        settingViewModel = ViewModelProvider(this, factory)[SettingViewModel::class.java]
-        workManager = WorkManager.getInstance(applicationContext)
-
-        settingViewModel.getThemeSettings().observe(this) { isDarkModeActive: Boolean ->
-            if (isDarkModeActive) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            }
+        if (Build.VERSION.SDK_INT >= 33) {
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        settingViewModel.getNotificationSettings().observe(this) { isNotificationActive: Boolean ->
-            if (isNotificationActive) {
-                if (Build.VERSION.SDK_INT >= 33) {
-                    // Jika versi Android 33 atau lebih tinggi, minta izin notifikasi
-                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    // Jika Android di bawah 33, langsung aktifkan worker
-                    startWorker()
-                }
-            } else {
-                cancelWorker()
-            }
+        viewModel.getThemeSettings().observe(this@MainActivity) {
+            applyDarkMode(it)
         }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setupBottomNavigation()
 
+        networkDialog = NetworkDialog(this)
+        setupNetworkChangeReceiver()
+
+    }
+
+    private fun setupBottomNavigation(){
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
@@ -92,26 +93,40 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
     }
 
-    private fun startWorker() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val periodicWorkRequest = PeriodicWorkRequestBuilder<EventWorker>(
-            1, TimeUnit.DAYS
-        )
-            .setConstraints(constraints)
-            .build()
-
-        workManager.enqueueUniquePeriodicWork(
-            "eventReminder",
-            ExistingPeriodicWorkPolicy.KEEP,
-            periodicWorkRequest
-        )
+    private fun setupNetworkChangeReceiver() {
+        networkChangeReceiver = NetworkUtil.NetworkChangeReceiver { isConnected ->
+            if (!isConnected) {
+                networkDialog?.showNoInternetDialog {
+                    if (isNetworkAvailable(this)) {
+                        networkDialog?.dismissDialog()
+                        dataRefreshListener?.onNetworkChanged()
+                    } else {
+                        Toast.makeText(this, "No Internet Connection!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                networkDialog?.dismissDialog()
+                dataRefreshListener?.onNetworkChanged()
+            }
+        }
+        val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        registerReceiver(networkChangeReceiver, filter)
     }
 
-    private fun cancelWorker() {
-        workManager.cancelUniqueWork("eventReminder")
+    private fun applyDarkMode(isDarkMode: Boolean) {
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
     }
-    fun getDataStore(): DataStore<Preferences> = dataStore
+
+    override fun onDestroy() {
+        super.onDestroy()
+        networkDialog?.dismissDialog()
+    }
+
+    interface NetworkChangeListener {
+        fun onNetworkChanged()
+    }
 }

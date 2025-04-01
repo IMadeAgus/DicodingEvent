@@ -5,26 +5,10 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface ApiService {
-//    @GET("events")
-//    fun searchEvent(
-//        @Query("active") active: Int,
-//        @Query("q") query: String,
-//    ): Call<EventResponse>
-
     @GET("events")
-    suspend fun getUpcomingEvent(
-        @Query("active") active: Int,
-        @Query("limit") limit: Int
+    suspend fun getEvents(
+        @Query("active") active: Int = 1, // 1 upcoming, 0 finished, -1 all
+        @Query("q") query: String? = null,
+        @Query("limit") limit: Int = 40,
     ): EventResponse
-
-    @GET("events")
-    suspend fun getFinishedEvent(
-        @Query("active") active: Int,
-        @Query("limit") limit: Int = 5
-    ): EventResponse
-
-//    @GET("events/{id}")
-//    fun getEventDetail(
-//        @Path("id") id: String
-//    ): Call<ResponseDetail>
 }

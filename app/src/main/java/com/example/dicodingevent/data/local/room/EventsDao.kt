@@ -6,49 +6,67 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.example.dicodingevent.data.local.entity.EventsEntity
+import com.example.dicodingevent.data.local.entity.EventEntity
 @Dao
 interface EventsDao {
-    @Query("SELECT * FROM events")
-    fun getEvents(): LiveData<List<EventsEntity>>
+    @Query("SELECT * FROM events WHERE isUpcoming = 1")
+    fun getUpcomingEvents(): LiveData<List<EventEntity>>
 
-    @Query("SELECT * FROM events where status = 'upcoming'")
-    fun getUpcomingEvents(): LiveData<List<EventsEntity>>
+    @Query("SELECT * FROM events WHERE isFinished = 1")
+    fun getFinishedEvents(): LiveData<List<EventEntity>>
 
-    @Query("SELECT * FROM events where status = 'finished' ORDER BY beginTime DESC")
-    fun getFinishedEvents(): LiveData<List<EventsEntity>>
+    @Query("SELECT * FROM events WHERE isFavorited = 1")
+    fun getFavoriteEvents(): LiveData<List<EventEntity>>
 
-    @Query("SELECT * FROM events WHERE status = 'finished' ORDER BY beginTime DESC LIMIT 5")
-    fun get5FinishedEvents(): LiveData<List<EventsEntity>>
+    @Query("""
+    SELECT * FROM events 
+    WHERE isUpcoming = 1
+    AND (
+        name LIKE '%' || :query || '%' OR 
+        summary LIKE '%' || :query || '%' OR 
+        description LIKE '%' || :query || '%' OR 
+        category LIKE '%' || :query || '%' OR 
+        ownerName LIKE '%' || :query || '%'
+        )
+    """)
+    fun searchUpcomingEvents(query: String): LiveData<List<EventEntity>>
 
-    @Query("SELECT * FROM events WHERE status = 'upcoming' LIMIT 1")
-    fun getTopUpcomingEvents(): LiveData<List<EventsEntity>>
+    @Query("""
+    SELECT * FROM events 
+    WHERE isFinished = 1
+    AND (
+        name LIKE '%' || :query || '%' OR 
+        summary LIKE '%' || :query || '%' OR 
+        description LIKE '%' || :query || '%' OR 
+        category LIKE '%' || :query || '%' OR 
+        ownerName LIKE '%' || :query || '%'
+        )
+    """)
+    fun searchFinishedEvents(query: String): LiveData<List<EventEntity>>
 
-    @Query("SELECT * FROM events WHERE id = :id ")
-    fun getDetailEvent(id: Int): LiveData<EventsEntity>
+    @Query("""
+    SELECT * FROM events 
+    WHERE isFavorited = 1
+    AND (
+        name LIKE '%' || :query || '%' OR 
+        summary LIKE '%' || :query || '%' OR 
+        description LIKE '%' || :query || '%' OR 
+        category LIKE '%' || :query || '%' OR 
+        ownerName LIKE '%' || :query || '%'
+        )
+    """)
+    fun searchFavoriteEvents(query: String): LiveData<List<EventEntity>>
 
-    @Query("SELECT * FROM events where favorited = 1")
-    fun getFavoritedEvents(): LiveData<List<EventsEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertEvents(news: List<EventsEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEvents(events: List<EventEntity>?)
 
     @Update
-    suspend fun updateEvents(news: EventsEntity)
+    suspend fun updateEvents(events: EventEntity)
 
-    @Query("DELETE FROM events WHERE status = 'upcoming'")
-    suspend fun deleteUpcomingAll()
-
-    @Query("DELETE FROM events WHERE status = 'finished'")
-    suspend fun deleteFinishedAll()
-
-    @Query("DELETE FROM events WHERE favorited = 0")
+    @Query("DELETE FROM events WHERE isFavorited = 0")
     suspend fun deleteAll()
 
-    @Query("SELECT EXISTS(SELECT * FROM events WHERE id = :id AND favorited = 1)")
-    suspend fun isEventsFavorited(id: Int): Boolean
-
-    @Query("SELECT * FROM events WHERE status = 'upcoming' AND name LIKE '%' || :query || '%'")
-    suspend fun searchUpcomingEvents(query: String): List<EventsEntity>
+    @Query("SELECT EXISTS(SELECT * FROM events WHERE name = :name AND isFavorited = 1)")
+    suspend fun isEventFavorite(name: String): Boolean
 
 }

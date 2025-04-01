@@ -5,7 +5,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dicodingevent.data.EventsRepository
-import com.example.dicodingevent.data.Result
 import com.example.dicodingevent.data.local.entity.EventsEntity
 
 import kotlinx.coroutines.launch

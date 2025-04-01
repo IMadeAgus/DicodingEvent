@@ -1,5 +1,6 @@
 package com.example.dicodingevent.ui.setting
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.NewInstanceFactory
 
@@ -13,5 +14,15 @@ class ViewModelFactory(
             return SettingViewModel(pref) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: " + modelClass.name)
+    }
+
+    companion object {
+        @Volatile
+        private var instance: ViewModelFactory? = null
+        fun getInstance(context: Context): ViewModelFactory =
+            instance ?: synchronized(this) {
+                val preferences = SettingPreferences.getInstance(context.dataStore)
+                instance ?: ViewModelFactory(preferences)
+            }.also { instance = it }
     }
 }

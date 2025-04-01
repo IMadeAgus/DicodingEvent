@@ -8,16 +8,14 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.dicodingevent.R
-import com.example.dicodingevent.data.local.entity.EventsEntity
-import com.example.dicodingevent.data.remote.response.ListEventsItem
-import com.example.dicodingevent.databinding.ItemEventBinding
+import com.example.dicodingevent.data.local.entity.EventEntity
 import com.example.dicodingevent.databinding.ItemHomeUpcomingEventBinding
-import com.example.dicodingevent.ui.upcoming.UpcomingAdapter
 
 class HomeUpcomingAdapter(
-    private val onFavoriteClick: (EventsEntity) -> Unit,
-    private val onItemClick: (EventsEntity) -> Unit,
-) : ListAdapter<EventsEntity, HomeUpcomingAdapter.MyViewHolder>(DIFF_CALLBACK) {
+    private var isLoading: Boolean = true,
+    private val onFavoriteClick: (EventEntity) -> Unit,
+    private val onItemClick: (EventEntity) -> Unit,
+) : ListAdapter<EventEntity, HomeUpcomingAdapter.MyViewHolder>(DIFF_CALLBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int):  MyViewHolder {
         val binding = ItemHomeUpcomingEventBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -31,9 +29,9 @@ class HomeUpcomingAdapter(
 
     class MyViewHolder(private val binding: ItemHomeUpcomingEventBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(
-            event: EventsEntity,
-            onFavoriteClick: (EventsEntity) -> Unit,
-            onItemClick: (EventsEntity) -> Unit
+            event: EventEntity,
+            onFavoriteClick: (EventEntity) -> Unit,
+            onItemClick: (EventEntity) -> Unit
         ) {
             binding.apply {
                 tvTitle.text = event.name
@@ -45,7 +43,7 @@ class HomeUpcomingAdapter(
 
                 // Set favorite icon
                 ivFavorite.setImageResource(
-                    if (event.isFavorited) R.drawable.baseline_favorite_24
+                    if (event.isFavorite) R.drawable.baseline_favorite_24
                     else R.drawable.baseline_favorite_border_24
                 )
 
@@ -62,18 +60,18 @@ class HomeUpcomingAdapter(
     }
 
     companion object {
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<EventsEntity>() {
+        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<EventEntity>() {
             override fun areItemsTheSame(
-                oldItem: EventsEntity,
-                newItem: EventsEntity
+                oldItem: EventEntity,
+                newItem: EventEntity
             ): Boolean {
                 return oldItem == newItem
             }
 
             @SuppressLint("DiffUtilEquals")
             override fun areContentsTheSame(
-                oldItem: EventsEntity,
-                newItem: EventsEntity
+                oldItem: EventEntity,
+                newItem: EventEntity
             ): Boolean {
                 return oldItem == newItem
             }
