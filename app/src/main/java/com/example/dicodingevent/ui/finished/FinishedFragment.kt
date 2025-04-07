@@ -26,24 +26,7 @@ class FinishedFragment : Fragment() {
         FinishedViewModelFactory.getInstance(requireActivity())
     }
     private val binding get() = _binding!!
-
-    private val adapter by lazy {
-        FinishedAdapter(
-            onItemClick = { event ->
-                val intent = Intent(requireContext(), DetailActivity::class.java).apply {
-                    putExtra(DetailActivity.EXTRA_EVENT_ID, event.id)
-                }
-                startActivity(intent)
-            },
-            onFavoriteClick = { event ->
-                if(event.isFavorited) {
-                    viewModel.deleteFavoritedEvent(event)
-                } else {
-                    viewModel.toggleFavorite(event)
-                }
-            }
-        )
-    }
+    private lateinit var verticalAdapter: FinishedAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,43 +40,45 @@ class FinishedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupRecyclerView()
-        observeData()
-    }
-
-    private fun setupRecyclerView() {
-        binding.rvFinishedEvent.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = this@FinishedFragment.adapter
+        verticalAdapter = FinishedAdapter() { events ->
+            if (events.isFavorite == true) {
+                viewModel.deleteEvents(events)
+            } else {
+                viewModel.saveEvents(events)
+            }
         }
-    }
+        verticalAdapter.setLoadingState(true)
 
-    private fun observeData() {
-        viewModel.finishedEvent.observe(viewLifecycleOwner, {result ->
-            if (result != null) {
-                when (result) {
-                    is Result.Loading -> {
-                        binding?.progressBar?.visibility = View.VISIBLE
-                    }
+        viewModel.getUpcomingEvents().observe(viewLifecycleOwner) { result ->
+            when (result) {
+                is com.example.eventapp.utils.Result.Loading -> {
+                    binding.progressBar.visibility = View.VISIBLE
+                    verticalAdapter.setLoadingState(true)
+                }
 
-                    is Result.Success -> {
-                        binding?.progressBar?.visibility = View.GONE
-                        val newsData = result.data
-                        adapter.submitList(newsData)
-                    }
+                is com.example.eventapp.utils.Result.Success -> {
+                    binding.progressBar.visibility = View.GONE
+                    verticalAdapter.setLoadingState(false)
+                    verticalAdapter.submitList(result.data)
+                }
 
-                    is Result.Error -> {
-                        binding?.progressBar?.visibility = View.GONE
-                        Toast.makeText(
-                            context,
-                            "Terjadi kesalahan" + result.error,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                is com.example.eventapp.utils.Result.Error -> {
+                    binding.progressBar.visibility = View.GONE
+//                    Toast.makeText(context, "An error occurred" + result.error, Toast.LENGTH_SHORT)
+//                        .show()
                 }
             }
-        })
+        }
+
+        binding.rvFinishedEvent.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = verticalAdapter
+        }
+
+        setupSearchView()
     }
+
+
 
     override fun onDestroyView() {
         super.onDestroyView()

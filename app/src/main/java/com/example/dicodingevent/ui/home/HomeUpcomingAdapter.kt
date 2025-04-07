@@ -1,78 +1,101 @@
 package com.example.dicodingevent.ui.home
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.dicodingevent.R
 import com.example.dicodingevent.data.local.entity.EventEntity
-import com.example.dicodingevent.databinding.ItemHomeUpcomingEventBinding
+import com.example.dicodingevent.databinding.ItemNormalVerticalBinding
+import com.example.dicodingevent.databinding.ItemShimmerVerticalBinding
+import com.example.dicodingevent.ui.detail.DetailActivity
 
 class HomeUpcomingAdapter(
     private var isLoading: Boolean = true,
     private val onFavoriteClick: (EventEntity) -> Unit,
-    private val onItemClick: (EventEntity) -> Unit,
-) : ListAdapter<EventEntity, HomeUpcomingAdapter.MyViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<EventEntity, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int):  MyViewHolder {
-        val binding = ItemHomeUpcomingEventBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return MyViewHolder(binding)
+
+    override fun getItemViewType(position: Int): Int {
+        return if (isLoading) VIEW_TYPE_SHIMMER else VIEW_TYPE_DATA
     }
 
-    override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        val event = getItem(position)
-        holder.bind(event, onFavoriteClick, onItemClick)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == VIEW_TYPE_SHIMMER) {
+            val binding = ItemShimmerVerticalBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+            ShimmerViewHolder(binding)
+        } else {
+            val binding = ItemNormalVerticalBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+            MyViewHolder(binding)
+        }
     }
 
-    class MyViewHolder(private val binding: ItemHomeUpcomingEventBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(
-            event: EventEntity,
-            onFavoriteClick: (EventEntity) -> Unit,
-            onItemClick: (EventEntity) -> Unit
-        ) {
-            binding.apply {
-                tvTitle.text = event.name
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (holder is MyViewHolder && !isLoading) {
+            val event = getItem(position)
+            holder.bind(event)
+            val favoriteImageView = holder.binding.favoriteImageView
+            favoriteImageView.setImageResource(
+                if (event.isFavorite == true) R.drawable.baseline_favorite_24
+                else R.drawable.baseline_favorite_border_24
+            )
+            favoriteImageView.setOnClickListener {
+                onFavoriteClick(event)
+            }
+        }
+    }
 
-                Glide.with(itemView.context)
-                    .load(event.mediaCover)
-                    .centerCrop()
-                    .into(imgMediaCover)
+    override fun getItemCount(): Int {
+        return if (isLoading) 5 else super.getItemCount()
+    }
 
-                // Set favorite icon
-                ivFavorite.setImageResource(
-                    if (event.isFavorite) R.drawable.baseline_favorite_24
-                    else R.drawable.baseline_favorite_border_24
-                )
+    @SuppressLint("NotifyDataSetChanged")
+    fun setLoadingState(isLoading: Boolean) {
+        this.isLoading = isLoading
+        notifyDataSetChanged()
+    }
 
-                // Handle clicks
-                ivFavorite.setOnClickListener {
-                    onFavoriteClick(event)
-                }
+    class ShimmerViewHolder(binding: ItemShimmerVerticalBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
-                root.setOnClickListener {
-                    onItemClick(event)
-                }
+    class MyViewHolder(val binding: ItemNormalVerticalBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(event: EventEntity) {
+            binding.titleTextView.text = event.name
+            binding.ownerTextView.text = event.ownerName
+            binding.chip.text = "${event.category}"
+            Glide.with(binding.root.context)
+                .load(event.imageLogo)
+                .transform(RoundedCorners(16))
+                .into(binding.imageView)
+            itemView.setOnClickListener {
+                val intent = Intent(binding.root.context, DetailActivity::class.java)
+                intent.putExtra("EXTRA_EVENT", event)
+                binding.root.context.startActivity(intent)
             }
         }
     }
 
     companion object {
+        private const val VIEW_TYPE_SHIMMER = 0
+        private const val VIEW_TYPE_DATA = 1
+
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<EventEntity>() {
-            override fun areItemsTheSame(
-                oldItem: EventEntity,
-                newItem: EventEntity
-            ): Boolean {
-                return oldItem == newItem
+            override fun areItemsTheSame(oldItem: EventEntity, newItem: EventEntity): Boolean {
+                return oldItem.id == newItem.id
             }
 
             @SuppressLint("DiffUtilEquals")
-            override fun areContentsTheSame(
-                oldItem: EventEntity,
-                newItem: EventEntity
-            ): Boolean {
+            override fun areContentsTheSame(oldItem: EventEntity, newItem: EventEntity): Boolean {
                 return oldItem == newItem
             }
         }

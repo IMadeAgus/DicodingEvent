@@ -1,36 +1,29 @@
 package com.example.dicodingevent.ui.upcoming
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dicodingevent.data.EventsRepository
-import com.example.dicodingevent.data.local.entity.EventsEntity
+import com.example.dicodingevent.data.local.entity.EventEntity
+import com.example.eventapp.utils.Result
 import kotlinx.coroutines.launch
 
-class UpcomingViewModel(private val eventsRepository: EventsRepository) : ViewModel() {
-    val upcomingEvents = eventsRepository.getUpcomingEvents()
+class UpcomingViewModel(private val eventRepository: EventsRepository) : ViewModel() {
 
-    private val _searchResults = MutableLiveData<com.example.dicodingevent.data.Result<List<EventsEntity>>>()
-    val searchResults: LiveData<com.example.dicodingevent.data.Result<List<EventsEntity>>> get() = _searchResults
+    fun getUpcomingEvents() = eventRepository.getEvents(active = 1)
 
-    fun searchEvents(query: String) {
+    fun searchUpcomingEvents(query: String): LiveData<Result<List<EventEntity>>> =
+        eventRepository.searchEvents(1, query)
+
+    fun saveEvents(events: EventEntity) {
         viewModelScope.launch {
-            eventsRepository.searchEvents(query).observeForever {
-                _searchResults.value = it
-            }
+            eventRepository.setFavoriteEvents(events, true)
         }
     }
 
-    fun toggleFavorite(event: EventsEntity) {
+    fun deleteEvents(events: EventEntity) {
         viewModelScope.launch {
-            eventsRepository.setEventsFavorite(event, true)
-        }
-    }
-
-    fun deleteFavoritedEvent(event: EventsEntity) {
-        viewModelScope.launch {
-            eventsRepository.setEventsFavorite(event,false)
+            eventRepository.setFavoriteEvents(events, false)
         }
     }
 

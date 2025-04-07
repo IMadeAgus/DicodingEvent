@@ -5,8 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.dicodingevent.data.EventsRepository
 import com.example.dicodingevent.di.Injection
-import com.example.dicodingevent.ui.upcoming.UpcomingViewModel
-import com.example.dicodingevent.ui.upcoming.UpcomingViewModelFactory
 
 class HomeViewModelFactory private constructor(
     private val eventsRepository: EventsRepository
@@ -25,12 +23,10 @@ class HomeViewModelFactory private constructor(
     companion object {
         @Volatile
         private var instance: HomeViewModelFactory? = null
-
         fun getInstance(context: Context): HomeViewModelFactory =
             instance ?: synchronized(this) {
-                instance ?: HomeViewModelFactory(
-                    Injection.provideRepository(context)
-                ).also { instance = it }
-            }
+                val repository = Injection.provideRepository(context)
+                instance ?: HomeViewModelFactory(repository)
+            }.also { instance = it }
     }
 }

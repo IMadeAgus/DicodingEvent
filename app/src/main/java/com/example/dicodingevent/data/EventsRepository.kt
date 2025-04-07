@@ -64,11 +64,10 @@ class EventsRepository private constructor(
         return eventsDao.getFavoriteEvents()
     }
 
-    suspend fun setEventsFavorite(events: EventEntity, favotiteState: Boolean) {
-        events.isFavorite = favotiteState
+    suspend fun setFavoriteEvents(events: EventEntity, favorite: Boolean) {
+        events.isFavorite = favorite
         eventsDao.updateEvents(events)
     }
-
     fun searchEvents(active: Int, query: String): LiveData<Result<List<EventEntity>>> = liveData {
         emit(Result.Loading)
         val localData: LiveData<Result<List<EventEntity>>>
